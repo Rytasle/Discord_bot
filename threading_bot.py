@@ -1,6 +1,4 @@
 import asyncio
-from csv import list_dialects
-from os import memfd_create
 import discord
 from discord.ui import Select, View
 from discord.ext import commands
@@ -140,7 +138,8 @@ async def on_message(message):
         teams = []
         k = 0
         mem_num = len(message.author.voice.channel.members)
-        radm_num = random.shuffle(list(range(mem_num)))
+        radm_num = list(range(mem_num))
+        random.shuffle(radm_num)
 
         for member in message.author.voice.channel.members:
             num = radm_num[k] % team_num
@@ -152,6 +151,7 @@ async def on_message(message):
             embed = discord.Embed(title=f'team{k}', description=team)
             await message.channel.send(embed=embed)
             k += 1
+
 
         channels = message.guild.voice_channels
         args = {}
