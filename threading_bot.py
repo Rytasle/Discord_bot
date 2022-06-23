@@ -124,33 +124,35 @@ async def on_message(message):
     elif message.content.startswith('--team'):
         space = ' '
         mess_block = message.content.split(space)
-        team_num: int = 0
+        team_num = 0
 
-        if mess_block[1] is None:
+        if len(mess_block) == 1:
             team_num = 2
         else:
             team_num = int(mess_block[1])
 
         if message.author.voice is None:
-                await message.channel.send('ボイスチャンネルに参加してからコマンドを打ってください。')
-                return
+            await message.channel.send('ボイスチャンネルに参加してからコマンドを打ってください。')
+            return
         
-        teams = []
         k = 0
         mem_num = len(message.author.voice.channel.members)
+        empty_l = [0] * mem_num
+        teams = dict(zip(list(range(team_num)), empty_l))
         radm_num = list(range(mem_num))
         random.shuffle(radm_num)
 
         for member in message.author.voice.channel.members:
             num = radm_num[k] % team_num
-            teams[num].append(member.name)
+            if teams[num] == 0:
+                teams[num] = member.name
+            else:
+                teams[num] = ', '.join([teams[num], member.name])
             k += 1
 
-        k = 1
-        for team in teams:
-            embed = discord.Embed(title=f'team{k}', description=team)
+        for key, team in teams:
+            embed = discord.Embed(title=f'team{key + 1}', description=team)
             await message.channel.send(embed=embed)
-            k += 1
 
 
         channels = message.guild.voice_channels
