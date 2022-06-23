@@ -1,9 +1,12 @@
 import asyncio
+from csv import list_dialects
+from os import memfd_create
 import discord
 from discord.ui import Select, View
 from discord.ext import commands
 import json
 
+import random
 from threading import Thread
 
 openfile = open('config.json', 'r')
@@ -36,16 +39,17 @@ def init():
     job2.join()
 
 
-@client.event
 # 準備完了
+@client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
 
+# イベント作成時通知
 @client.event
-# イベント作成時にシステムチャンネルに通知
 async def on_scheduled_event_create(event):
     await event.guild.system_channel.send(f'{event.name}が作成されました!!イベントをチェック!!' + event.url)
 
+# メンバーの入退出管理
 @client.event
 async def on_voice_state_update(member, before, after):
      
@@ -66,9 +70,8 @@ async def on_voice_state_update(member, before, after):
             await sysch.send(after.channel.name + "で" + member.name + "が待っています" + Invite.url)
             print(after.channel.name + "で" + member.name + "が待っています" + Invite.url)
 
-
+# メッセージ受け取り時
 @client.event
-# 以下、コマンド受け取り時の処理
 async def on_message(message):
     if message.author == client.user:
         return
@@ -106,19 +109,49 @@ async def on_message(message):
 
         select_menu = Select(placeholder='channels', options=options)
 
+        # コールバックで選択したチャンネルをsub_clientに送信
         async def menu_callback(Interaction):
             await Queue.put(args[select_menu.values[0]])
             await Interaction.channel.send(f'{Interaction.user.name}は{select_menu.values[0]}を選択しました')
             await message.channel.send('wakeup EAR')
             return
 
-        
+        # リストをテキストチャンネルに送信
         select_menu.callback = menu_callback
         view = View()
         view.add_item(select_menu)
         await message.channel.send('choose channel', view=view)
 
+    # 「--team」はチーム分け
     elif message.content.startswith('--team'):
+        space = ' '
+        mess_block = message.content.split(space)
+        team_num: int = 0
+
+        if mess_block[1] is None:
+            team_num = 2
+        else:
+            team_num = int(mess_block[1])
+
+        if message.author.voice is None:
+                await message.channel.send('ボイスチャンネルに参加してからコマンドを打ってください。')
+                return
+        
+        teams = []
+        k = 0
+        mem_num = len(message.author.voice.channel.members)
+        radm_num = random.shuffle(list(range(mem_num)))
+
+        for member in message.author.voice.channel.members:
+            num = radm_num[k] % team_num
+            teams[num].append(member.name)
+            k += 1
+
+        k = 1
+        for team in teams:
+            embed = discord.Embed(title=f'team{k}', description=team)
+            await message.channel.send(embed=embed)
+            k += 1
 
         channels = message.guild.voice_channels
         args = {}
@@ -140,7 +173,7 @@ async def on_message(message):
         await message.channel.send('choose channel', view=view)
 
         
-        
+    # 「--bye」はボイスチャンネルから退出    
     elif message.content.startswith('--bye'):
         if message.guild.voice_client is None:
             await message.channel.send('僕はまだそこにいないよ')
@@ -148,6 +181,9 @@ async def on_message(message):
 
         await message.guild.voice_client.disconnect()
 
+# 
+# 以下、sub_client側の処理
+# 
 
 @sub_client.event
 async def on_ready():
