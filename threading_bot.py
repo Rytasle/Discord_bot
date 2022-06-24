@@ -150,8 +150,8 @@ async def on_message(message):
                 teams[num] = ', '.join([teams[num], member.name])
             k += 1
 
-        for key, team in teams:
-            embed = discord.Embed(title=f'team{key + 1}', description=team)
+        for key, team in teams.items():
+            embed = discord.Embed(title=f'Team{key + 1}', description=team)
             await message.channel.send(embed=embed)
 
 
