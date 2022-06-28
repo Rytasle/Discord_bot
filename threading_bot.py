@@ -15,7 +15,7 @@ dc_token2 = configs['token2']
 dc_vc_id1 = None
 dc_vc_id2 = None
 
-help_mess = '''利用できるコマンドの一覧だよ！
+help_mess = '''
 「--team 数字」
     ->数字の数だけメンバーを分けるよ
 「--expend」
