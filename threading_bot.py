@@ -15,6 +15,15 @@ dc_token2 = configs['token2']
 dc_vc_id1 = None
 dc_vc_id2 = None
 
+help_mess = '''利用できるコマンドの一覧だよ！
+「--team 数字」
+    ->数字の数だけメンバーを分けるよ
+「--expend」
+    ->ボイスチャンネルを選択して、そのチャンネルのボイスを再生するよ
+「--bye」
+    ->ボイスチャンネルに入ったbotを退出させるよ
+'''
+
 client = discord.Client(intents=discord.Intents.all())
 sub_client = discord.Client(intents=discord.Intents.all())
 
@@ -121,11 +130,13 @@ async def on_message(message):
         await message.channel.send('choose channel', view=view)
 
     # 「--team」はチーム分け
+    # 「--team 2」という入力の場合、発言者と同じボイスチャンネルに所属しているメンバーを2チームに分ける
     elif message.content.startswith('--team'):
         space = ' '
         mess_block = message.content.split(space)
         team_num = 0
 
+        # 「--team」だけの入力の場合
         if len(mess_block) == 1:
             team_num = 2
         else:
@@ -135,6 +146,7 @@ async def on_message(message):
             await message.channel.send('ボイスチャンネルに参加してからコマンドを打ってください。')
             return
         
+        # ランダムなチーム生成のための変数定義
         k = 0
         mem_num = len(message.author.voice.channel.members)
         empty_l = [0] * mem_num
@@ -142,6 +154,7 @@ async def on_message(message):
         radm_num = list(range(mem_num))
         random.shuffle(radm_num)
 
+        # 全てのメンバーを振り分け
         for member in message.author.voice.channel.members:
             num = radm_num[k] % team_num
             if teams[num] == 0:
@@ -150,11 +163,12 @@ async def on_message(message):
                 teams[num] = ', '.join([teams[num], member.name])
             k += 1
 
+        # 埋め込みメッセージとして送信
         for key, team in teams.items():
             embed = discord.Embed(title=f'Team{key + 1}', description=team)
             await message.channel.send(embed=embed)
 
-
+        # 全ボイスチャンネルをリスト化
         channels = message.guild.voice_channels
         args = {}
         for channel in channels:
@@ -165,6 +179,7 @@ async def on_message(message):
 
         select_menu = Select(placeholder='channels', options=options)
 
+        # コールバックで選択したチャンネルにメンバーを移動
         async def menu_callback(Interaction):
             team = client.get_channel(args[select_menu.values[0]])
             await Interaction.user.move_to(team)
@@ -174,7 +189,10 @@ async def on_message(message):
         view.add_item(select_menu)
         await message.channel.send('choose channel', view=view)
 
-        
+    elif message.content.startswith('--help'):
+        embed = discord.Embed(title='利用できるコマンドの一覧だよ！', description=help_mess)
+        await message.channel.send(embed=embed)
+
     # 「--bye」はボイスチャンネルから退出    
     elif message.content.startswith('--bye'):
         if message.guild.voice_client is None:
