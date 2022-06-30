@@ -1,7 +1,6 @@
 import asyncio
 import discord
 from discord.ui import Select, View
-from discord.ext import commands
 import json
 
 import random
